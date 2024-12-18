@@ -29,9 +29,7 @@
 
 ## Tech Stack
 
-- **SwiftUI**: Seamless, modern interface.
-- **State Management**: Dynamic habit updates.
-- **Date Handling**: Precision with `Calendar` and `DateFormatter`.
+- will add these details
 
 ## Quick Start
 
