@@ -35,6 +35,6 @@
 
 1. **Clone the Repo**:
    ```bash
-   git clone <repository_url>
+   git clone https://github.com/landonwest815/TrophyHabit
    cd TrophyHabits
    open TrophyHabits.xcodeproj
