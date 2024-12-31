@@ -26,6 +26,10 @@ struct HomeView: View {
         [completed1, completed2, completed3, completed4, completed5, completed6].filter { $0 }.count
     }
     
+    var progress: Double {
+        Double(trueCount) / 6.0
+    }
+    
     var body: some View {
         NavigationView {
             VStack(spacing: 0) {
@@ -40,189 +44,59 @@ struct HomeView: View {
                         WeekView(startDate: startOfWeek, shownMonth: Date.now)
                     }
                     
-                    VStack {
-                        
-                        HStack(spacing: 20) {
-                            
-                            HStack {
-                                Image(systemName: "trophy.fill")
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fit)
-                                    .frame(height: 20)
-                                    .foregroundStyle(.gray/*randomTrophyColor()*/)
-                                
-                                HStack(spacing: 3) {
-                                    Text("21")
-                                        .font(.headline)
-                                        .fontWeight(.semibold)
-                                        .fontDesign(.rounded)
-                                    Text("pts")
-                                        .font(.headline)
-                                        .fontWeight(.semibold)
-                                        .fontDesign(.rounded)
-                                        .foregroundStyle(.gray)
-                                }
-                            }
-                            
-                            Divider()
-                            
-                            HStack {
-                                Image(systemName: "medal.star.fill")
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fit)
-                                    .frame(height: 22.5)
-                                    .foregroundStyle(.yellow)
-                                
-                                HStack(spacing: 1) {
-                                    Text("3")
-                                        .font(.headline)
-                                        .fontWeight(.semibold)
-                                        .fontDesign(.rounded)
-                                    Text("x")
-                                        .font(.headline)
-                                        .fontWeight(.semibold)
-                                        .fontDesign(.rounded)
-                                        .foregroundStyle(.gray)
-                                        .offset(y: 0.5)
-                                }
-                            }
-                            
-                            Divider()
-                            
-                            
-                            HStack {
-                                Image(systemName: "medal.star.fill")
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fit)
-                                    .frame(height: 22.5)
-                                    .foregroundStyle(.gray)
-                                
-                                HStack(spacing: 1) {
-                                    Text("2")
-                                        .font(.headline)
-                                        .fontWeight(.semibold)
-                                        .fontDesign(.rounded)
-                                    Text("x")
-                                        .font(.headline)
-                                        .fontWeight(.semibold)
-                                        .fontDesign(.rounded)
-                                        .foregroundStyle(.gray)
-                                        .offset(y: 0.5)
-                                }
-                            }
-                            
-                            Divider()
-                            
-                            HStack {
-                                Image(systemName: "medal.star.fill")
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fit)
-                                    .frame(height: 22.5)
-                                    .foregroundStyle(.brown)
-                                
-                                HStack(spacing: 1) {
-                                    Text("0")
-                                        .font(.headline)
-                                        .fontWeight(.semibold)
-                                        .fontDesign(.rounded)
-                                    Text("x")
-                                        .font(.headline)
-                                        .fontWeight(.semibold)
-                                        .fontDesign(.rounded)
-                                        .foregroundStyle(.gray)
-                                        .offset(y: 0.5)
-                                }
-                            }
-                            
-                        }
-                        .padding(.horizontal, 25)
-                        .frame(height: 30)
-                        
-                    }
                 }
                 .padding(.top, 10)
                 
                 Spacer()
-                                
-                VStack {
-                    
-                    Image(systemName: "medal.star.fill")
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .frame(height: 150)
-                        .foregroundStyle(
-                            trueCount == 2 || trueCount == 3 ? Color.brown :
-                            (trueCount == 4 || trueCount == 5 ? Color.gray :
-                            (trueCount == 6 ? Color.yellow : Color.white))
-                        )
-                        .symbolEffect(.bounce.down, options: .speed(2), value: medalUpgrade)
-                        .symbolEffect(.bounce, options: .speed(2), value: medalDowngrade)
-                        .opacity(trueCount < 2 ? 0.15 : 1)
-                    
-                    HStack {
-                        Text("\(trueCount)")
-                        Text("/")
-                            .foregroundStyle(.gray)
-                        Text("6")
+                       
+                ProgressView(progress: progress, medalUpgrade: $medalUpgrade, trueCount: trueCount)
+                    .padding(.top, 15)
+                    .onChange(of: trueCount) { oldValue, newValue in
+                        if newValue > oldValue && (newValue == 2 || newValue == 4 || newValue == 6) {
+                            print("test")
+                            medalUpgrade.toggle()
+                        }
                     }
-                    .font(.title2)
-                    .fontWeight(.bold)
-                    .fontDesign(.rounded)
-                    .opacity(trueCount == 0 ? 0.15 : 1)
-                    
-                }
-                .sensoryFeedback(.increase, trigger: trueCount)
-                .onChange(of: trueCount) { oldValue, newValue in
-                    if newValue > oldValue && (newValue == 2 || newValue == 4 || newValue == 6) {
-                        medalUpgrade.toggle()
-                    }
-                    else if newValue < oldValue && (newValue == 1 || newValue == 3 || newValue == 5) {
-                        medalDowngrade.toggle()
-                    }
-                }
+
                 
                 Spacer()
                 
                 ZStack(alignment: .bottom) {
-                    if (true) {
-                        Color.black
-                            .opacity(0.3)
-                            .ignoresSafeArea()
 
-                        VStack(spacing: 15) {
-                                
-                            HStack(spacing: 15) {
-                                HabitView(icon: "pencil.and.scribble", habit: "Review Notes", completed: $completed1, streak: 2)
-                                HabitView(icon: "apple.terminal", habit: "Leetcode Problem", completed: $completed2, streak: 3)
-                                HabitView(icon: "carrot.fill", habit: "Snack Less", completed: $completed3, streak: 0)
-                            }
+                    VStack(spacing: 15) {
                             
-                            HStack(spacing: 15) {
-                                HabitView(icon: "figure.walk.motion", habit: "10,000 Steps", completed: $completed4, streak: 0)
-                                HabitView(icon: "bolt.fill", habit: "Charge Devices", completed: $completed5, streak: 0)
-                                HabitView(icon: "bed.double.fill", habit: "8 Hours of Sleep", completed: $completed6, streak: 0)
-                            }
-                                    
-                            HStack(spacing: 5) {
-                                Image(systemName: "info.circle")
-                                Text("Tap and Hold for Habit Details")
-                            }
-                            .font(.footnote)
-                            .fontWeight(.regular)
-                            .fontDesign(.rounded)
-                            .foregroundStyle(.gray)
-                            
-                            Spacer()
+                        HStack(spacing: 15) {
+                            HabitView(icon: "pencil.and.scribble", habit: "Review Notes", completed: $completed1, streak: 2)
+                            HabitView(icon: "apple.terminal", habit: "Leetcode Problem", completed: $completed2, streak: 3)
+                            HabitView(icon: "carrot.fill", habit: "Snack Less", completed: $completed3, streak: 0)
                         }
-                        .frame(maxWidth: .infinity, maxHeight: 366)
-                        .padding(.top, 24)
-                        .transition(.move(edge: .bottom))
-                        .background(.ultraThinMaterial)
-                        .cornerRadius(32)
+                        
+                        HStack(spacing: 15) {
+                            HabitView(icon: "figure.walk.motion", habit: "10,000 Steps", completed: $completed4, streak: 0)
+                            HabitView(icon: "bolt.fill", habit: "Charge Devices", completed: $completed5, streak: 0)
+                            HabitView(icon: "bed.double.fill", habit: "8 Hours of Sleep", completed: $completed6, streak: 0)
+                        }
+                                
+//                            HStack(spacing: 5) {
+//                                Image(systemName: "info.circle")
+//                                Text("Tap and Hold for Habit Details")
+//                            }
+//                            .font(.footnote)
+//                            .fontWeight(.regular)
+//                            .fontDesign(.rounded)
+//                            .foregroundStyle(.gray)
+                        
+                        Spacer()
                     }
+                    .frame(maxWidth: .infinity, maxHeight: 375)
+                    .padding(.top, 24)
+                    .transition(.move(edge: .bottom))
+                    .background(.ultraThinMaterial)
+                    .cornerRadius(32)
+                    
                 }
                 .ignoresSafeArea()
-                .frame(maxWidth: .infinity, maxHeight: 385, alignment: .bottom)
+                .frame(maxWidth: .infinity, maxHeight: 375, alignment: .bottom)
                 
             }
             .navigationBarTitleDisplayMode(.inline)
@@ -309,7 +183,7 @@ struct HomeView: View {
         }
         .sheet(isPresented: $isCalendarPresented) {
             CalendarSheet()
-            .presentationDetents([.fraction(0.7)])
+            .presentationDetents([.fraction(0.85)])
             .presentationCornerRadius(32)
         }
 
@@ -531,7 +405,7 @@ struct HabitView: View {
         }
         .sheet(isPresented: $isDetailSheetPresented) {
             HabitDetailView(habit: habit, icon: icon, streak: streak, completed: completed)
-                .presentationDetents(.init([.fraction(0.5)]))
+                .presentationDetents(.init([.fraction(0.6)]))
                 .presentationCornerRadius(32)
         }
     }
