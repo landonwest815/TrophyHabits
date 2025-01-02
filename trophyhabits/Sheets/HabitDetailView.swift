@@ -4,6 +4,7 @@
 //
 //  Created by Landon West on 12/18/24.
 //
+
 import SwiftUI
 
 struct HabitDetailView: View {
@@ -13,17 +14,17 @@ struct HabitDetailView: View {
     var completed: Bool
 
     var body: some View {
-        VStack(spacing: 50) {
-            
-            HStack {
-                
-                VStack(spacing: 40) {
+        VStack(spacing: 20) {
+            HStack(spacing: 30) {
+                                
+                VStack(spacing: 20) {
+                    
+                    // habit card
                     ZStack {
                         
                         VStack(spacing: 15) {
-                            
                             Button {
-                                
+                                // change icon
                             } label: {
                                 Image(systemName: icon)
                                     .resizable()
@@ -31,10 +32,9 @@ struct HabitDetailView: View {
                                     .frame(width: 75, height: 75)
                                     .foregroundStyle(.white)
                             }
-                            
-                            
+
                             Button {
-                                
+                                // change habit
                             } label: {
                                 Text(habit)
                                     .font(.title2)
@@ -44,44 +44,41 @@ struct HabitDetailView: View {
                                     .frame(width: 112.5, height: 75)
                                     .foregroundStyle(.white)
                             }
-                            
                         }
                         
                     }
                     .padding()
                     .background(Color(red: 0.2, green: 0.2, blue: 0.2))
                     .cornerRadius(20)
+
                     
+                    // habit archival/deletion
                     HStack(spacing: 15) {
                         Button {
-                            
+                            // archive the habit
                         } label: {
                             ZStack {
-                                VStack(spacing: 15) {
-                                    Image(systemName: "archivebox.fill")
-                                        .resizable()
-                                        .aspectRatio(contentMode: .fit)
-                                        .frame(width: 30, height: 30)
-                                        .foregroundStyle(.white)
-                                }
+                                Image(systemName: "archivebox.fill")
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fit)
+                                    .frame(width: 30, height: 30)
+                                    .foregroundStyle(.white)
                             }
                             .frame(width: 30, height: 30)
                             .padding()
                             .background(Color(red: 0.2, green: 0.2, blue: 0.2))
                             .cornerRadius(20)
                         }
-                        
+
                         Button {
-                            
+                            // delete habit
                         } label: {
                             ZStack {
-                                VStack(spacing: 15) {
-                                    Image(systemName: "trash")
-                                        .resizable()
-                                        .aspectRatio(contentMode: .fit)
-                                        .frame(width: 30, height: 30)
-                                        .foregroundStyle(.white)
-                                }
+                                Image(systemName: "trash")
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fit)
+                                    .frame(width: 30, height: 30)
+                                    .foregroundStyle(.white)
                             }
                             .frame(width: 30, height: 30)
                             .padding()
@@ -91,11 +88,9 @@ struct HabitDetailView: View {
                     }
                     
                 }
-            
-                Spacer()
                 
+                // stats
                 VStack(alignment: .leading, spacing: 15) {
-                    
                     VStack(alignment: .leading) {
                         Text("Completed")
                             .font(.subheadline)
@@ -107,7 +102,7 @@ struct HabitDetailView: View {
                             .fontDesign(.rounded)
                             .fontWeight(.semibold)
                     }
-                    
+
                     VStack(alignment: .leading) {
                         Text("Completion %")
                             .font(.subheadline)
@@ -119,7 +114,7 @@ struct HabitDetailView: View {
                             .fontDesign(.rounded)
                             .fontWeight(.semibold)
                     }
-                    
+
                     VStack(alignment: .leading) {
                         Text("Current Streak")
                             .font(.subheadline)
@@ -131,7 +126,7 @@ struct HabitDetailView: View {
                             .fontDesign(.rounded)
                             .fontWeight(.semibold)
                     }
-                    
+
                     VStack(alignment: .leading) {
                         Text("Longest Streak")
                             .font(.subheadline)
@@ -143,7 +138,7 @@ struct HabitDetailView: View {
                             .fontDesign(.rounded)
                             .fontWeight(.semibold)
                     }
-                    
+
                     VStack(alignment: .leading) {
                         Text("Created")
                             .font(.subheadline)
@@ -155,13 +150,11 @@ struct HabitDetailView: View {
                             .fontDesign(.rounded)
                             .fontWeight(.semibold)
                     }
-                    
                 }
-                
-                Spacer()
+
             }
             .padding()
-            
+
             Spacer()
         }
         .padding()

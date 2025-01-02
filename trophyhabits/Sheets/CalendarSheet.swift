@@ -3,6 +3,7 @@ import SwiftUI
 
 struct CalendarSheet: View {
     @State private var displayedMonth: Date = Date() // Tracks the displayed month
+    @State private var dragOffset: CGFloat = 0 // Tracks the drag offset
 
     var body: some View {
         NavigationView {
@@ -21,36 +22,51 @@ struct CalendarSheet: View {
                     
                     Spacer()
                     
-                    HStack {
-                        Image(systemName: "calendar")
-                            .font(.subheadline)
-                            .fontWeight(.semibold)
-                            .fontDesign(.rounded)
-                        
-                        Text(monthYearString(for: displayedMonth))
-                            .font(.title3)
-                            .fontWeight(.semibold)
-                            .fontDesign(.rounded)
-                    }
+                    Text(monthYearString(for: displayedMonth))
+                        .font(.title3)
+                        .fontWeight(.semibold)
+                        .fontDesign(.rounded)
                     
                     Spacer()
                     
                     Button(action: {
                         withAnimation {
-                            displayedMonth = stepMonth(by: 1)
+                            if canStepForward() {
+                                displayedMonth = stepMonth(by: 1)
+                            }
                         }
                     }) {
                         Image(systemName: "chevron.right")
                             .font(.title3)
-                            .foregroundStyle(.gray)
+                            .foregroundStyle(!canStepForward() ? .gray.opacity(0.25) : .gray)
                     }
+                    .disabled(!canStepForward())
                 }
                 .padding(.horizontal)
-                .padding(.bottom, 10)
 
-                // Monthly View
+                // Monthly View with Swipe Gesture
                 MonthlySheetView(shownMonth: displayedMonth)
                     .padding(.top, 10)
+                    .gesture(
+                        DragGesture()
+                            .onChanged { value in
+                                dragOffset = value.translation.width
+                            }
+                            .onEnded { value in
+                                if value.translation.width < -50 { // Swipe left
+                                    withAnimation {
+                                        if canStepForward() {
+                                            displayedMonth = stepMonth(by: 1)
+                                        }
+                                    }
+                                } else if value.translation.width > 50 { // Swipe right
+                                    withAnimation {
+                                        displayedMonth = stepMonth(by: -1)
+                                    }
+                                }
+                                dragOffset = 0
+                            }
+                    )
                 
                 if !isCurrentMonth(displayedMonth) {
                     Button {
@@ -58,19 +74,23 @@ struct CalendarSheet: View {
                             displayedMonth = Date()
                         }
                     } label: {
-                        Text("Go to Today")
-                            .font(.headline)
-                            .fontWeight(.semibold)
-                            .fontDesign(.rounded)
-                            .foregroundStyle(.white)
+                        HStack {
+                            Text("Go to Today")
+                            Image(systemName: "arrow.right.circle")
+                        }
+                        .font(.headline)
+                        .fontWeight(.semibold)
+                        .fontDesign(.rounded)
+                        .foregroundStyle(.white)
                     }
-                    .padding(.top)
+                    .padding(.top, 25)
                 }
                 
                 Spacer()
             }
             .padding()
         }
+        .sensoryFeedback(.increase, trigger: displayedMonth)
         .preferredColorScheme(.dark)
     }
     
@@ -78,6 +98,17 @@ struct CalendarSheet: View {
     func stepMonth(by value: Int) -> Date {
         let calendar = Calendar.current
         return calendar.date(byAdding: .month, value: value, to: displayedMonth) ?? displayedMonth
+    }
+    
+    func canStepForward() -> Bool {
+        let currentMonth = Calendar.current.component(.month, from: Date())
+        let currentYear = Calendar.current.component(.year, from: Date())
+        
+        let displayedMonthComponents = Calendar.current.dateComponents([.month, .year], from: displayedMonth)
+        let displayedMonth = displayedMonthComponents.month ?? 0
+        let displayedYear = displayedMonthComponents.year ?? 0
+        
+        return displayedYear < currentYear || (displayedYear == currentYear && displayedMonth < currentMonth)
     }
     
     func monthYearString(for date: Date) -> String {
@@ -91,7 +122,6 @@ struct CalendarSheet: View {
         return calendar.isDate(date, equalTo: Date(), toGranularity: .month) &&
                calendar.isDate(date, equalTo: Date(), toGranularity: .year)
     }
-
 }
 
 struct DaySheetView: View {
@@ -104,12 +134,12 @@ struct DaySheetView: View {
             ZStack {
                 
                 Text(String(dayNumber()))
-                    .font(.footnote)
+                    .font(.subheadline)
                     .fontDesign(.rounded)
                     .fontWeight(.semibold)
                     .foregroundStyle(isCurrentDay() ? .black : .white)
             }
-            .frame(width: 18, height: 18)
+            .frame(width: 22, height: 22)
             .padding(8.5)
             .background(
                 RoundedRectangle(cornerRadius: 12)
@@ -159,20 +189,10 @@ struct WeekSheetView: View {
     var shownMonth: Date
 
     var body: some View {
-        HStack(spacing: 7.5) {
+        HStack(spacing: 10) {
             ForEach(generateWeekDays(for: startDate), id: \.self) { date in
                 DaySheetView(date: date, shownMonth: shownMonth)
             }
-            
-            Spacer()
-            
-            Image(systemName: "trophy.fill")
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-                .frame(width: 25, height: 25)
-                .foregroundStyle(randomTrophyColor())
-            
-            Spacer()
         }
     }
 
@@ -190,31 +210,45 @@ struct MonthlySheetView: View {
     var body: some View {
         HStack {
             
-            Spacer()
             
-            VStack(alignment: .leading, spacing: 7.5) {
-                
-                HStack(spacing: 7.5) {
-                    ForEach(Array("SMTWTFS"), id: \.self) { day in
-                        VStack {
-                            Text(String(day))
-                                .foregroundColor(.white)
-                                .font(.subheadline)
-                                .fontDesign(.rounded)
-                                .fontWeight(.semibold)
-                        }
-                        .frame(width: 18, height: 18)
-                        .padding(.horizontal, 8.5)
-                        .padding(.bottom, 5)
-                        
-                    }
-                }
-                
-                ForEach(generateWeeks(for: shownMonth), id: \.self) { weekStartDate in
-                    WeekSheetView(startDate: weekStartDate, shownMonth: shownMonth)
-                }
+            VStack(spacing: 10) {
                 
                 VStack(spacing: 10) {
+                    
+                    HStack(spacing: 15) {
+                        
+                        Image(systemName: "trophy.fill")
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(height: 27.5)
+                            .foregroundStyle(randomTrophyColor())
+                        
+                        HStack(spacing: 5) {
+                            Text("\(Int.random(in: 0...150))")
+                                .font(.largeTitle)
+                                .foregroundStyle(.primary)
+                            Text("pts")
+                                .font(.headline)
+                                .foregroundStyle(.secondary)
+                                .offset(y: 2.5)
+                        }
+                        
+                        HStack(spacing: 1) {
+                            Text("+")
+                                .font(.headline)
+                                .foregroundStyle(.green)
+                            
+                            Text("\(Int.random(in: 1...75))")
+                                .font(.headline)
+                                .foregroundStyle(.green)
+                        }
+                        .offset(y: 2.5)
+                        
+                    }
+                    .fontWeight(.semibold)
+                    .fontDesign(.rounded)
+                    .padding(.bottom, 10)
+                        
                     HStack(spacing: 10) {
                                                 
                         HStack(spacing: 10) {
@@ -278,78 +312,35 @@ struct MonthlySheetView: View {
                         )
                                                 
                     }
+                    .padding(.horizontal)
                     
-                    
-//                    HStack(spacing: 10) {
-//                        
-//                        
-//                        HStack(spacing: 10) {
-//                            Image(systemName: "trophy.fill")
-//                                .resizable()
-//                                .aspectRatio(contentMode: .fit)
-//                                .frame(height: 25)
-//                                .foregroundStyle(.yellow)
-//                            
-//                            Text("x2")
-//                                .font(.headline)
-//                                .fontWeight(.semibold)
-//                                .fontDesign(.rounded)
-//                            
-//                        }
-//                        .frame(maxWidth: .infinity, maxHeight: 30)
-//                        .padding(10)
-//                        .background(
-//                            RoundedRectangle(cornerRadius: 12)
-//                                .fill(Color(red: 0.2, green: 0.2, blue: 0.2))
-//                        )
-//                        
-//                        HStack(spacing: 10) {
-//                            Image(systemName: "trophy.fill")
-//                                .resizable()
-//                                .aspectRatio(contentMode: .fit)
-//                                .frame(height: 25)
-//                                .foregroundStyle(.gray)
-//                            
-//                            Text("x1")
-//                                .font(.headline)
-//                                .fontWeight(.semibold)
-//                                .fontDesign(.rounded)
-//                            
-//                        }
-//                        .frame(maxWidth: .infinity, maxHeight: 30)
-//                        .padding(10)
-//                        .background(
-//                            RoundedRectangle(cornerRadius: 12)
-//                                .fill(Color(red: 0.2, green: 0.2, blue: 0.2))
-//                        )
-//                        
-//                        HStack(spacing: 10) {
-//                            Image(systemName: "trophy.fill")
-//                                .resizable()
-//                                .aspectRatio(contentMode: .fit)
-//                                .frame(height: 25)
-//                                .foregroundStyle(.brown)
-//                            
-//                            Text("x2")
-//                                .font(.headline)
-//                                .fontWeight(.semibold)
-//                                .fontDesign(.rounded)
-//                            
-//                        }
-//                        .frame(maxWidth: .infinity, maxHeight: 30)
-//                        .padding(10)
-//                        .background(
-//                            RoundedRectangle(cornerRadius: 12)
-//                                .fill(Color(red: 0.2, green: 0.2, blue: 0.2))
-//                        )
-//                        
-//                        
-//                    }
                 }
-                .padding(.top, 25)
+                .padding(.bottom, 10)
+                
+                VStack(spacing: 10) {
+                    HStack(spacing: 10) {
+                        ForEach(Array("SMTWTFS"), id: \.self) { day in
+                            VStack {
+                                Text(String(day))
+                                    .foregroundColor(.gray)
+                                    .font(.subheadline)
+                                    .fontDesign(.rounded)
+                                    .fontWeight(.semibold)
+                            }
+                            .frame(width: 22, height: 22)
+                            .padding(.horizontal, 8.5)
+                            .padding(.bottom, 5)
+                            
+                        }
+                    }
+                    
+                    ForEach(generateWeeks(for: shownMonth), id: \.self) { weekStartDate in
+                        WeekSheetView(startDate: weekStartDate, shownMonth: shownMonth)
+                    }
+                }
+                
             }
             
-            Spacer()
         }
     }
 
@@ -364,6 +355,7 @@ struct MonthlySheetView: View {
             calendar.date(byAdding: .weekOfMonth, value: $0 - 1, to: firstDayOfMonth)
         }
     }
+
 }
 
 #Preview {

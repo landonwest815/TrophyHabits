@@ -7,12 +7,12 @@
 import SwiftUI
 
 struct TrophyAndMedalStatsView: View {
-    var goldTrophies: Int
-    var silverTrophies: Int
-    var bronzeTrophies: Int
-    var goldMedals: Int
-    var silverMedals: Int
-    var bronzeMedals: Int
+    var goldTrophies: Int = 2
+    var silverTrophies: Int = 1
+    var bronzeTrophies: Int = 2
+    var goldMedals: Int = 7
+    var silverMedals: Int = 11
+    var bronzeMedals: Int = 15
 
     var body: some View {
         VStack(spacing: 25) {
