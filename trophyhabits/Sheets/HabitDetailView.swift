@@ -6,12 +6,14 @@
 //
 
 import SwiftUI
+import SwiftData
 
 struct HabitDetailView: View {
-    var habit: String
-    var icon: String
-    var streak: Int
-    var completed: Bool
+    
+    @Environment(\.modelContext) private var modelContext
+    @Environment(\.dismiss) private var dismiss
+    
+    var habit: Habit
 
     var body: some View {
         VStack(spacing: 20) {
@@ -26,7 +28,7 @@ struct HabitDetailView: View {
                             Button {
                                 // change icon
                             } label: {
-                                Image(systemName: icon)
+                                Image(systemName: habit.icon)
                                     .resizable()
                                     .aspectRatio(contentMode: .fit)
                                     .frame(width: 75, height: 75)
@@ -36,7 +38,7 @@ struct HabitDetailView: View {
                             Button {
                                 // change habit
                             } label: {
-                                Text(habit)
+                                Text(habit.habit)
                                     .font(.title2)
                                     .fontDesign(.rounded)
                                     .fontWeight(.semibold)
@@ -71,7 +73,21 @@ struct HabitDetailView: View {
                         }
 
                         Button {
-                            // delete habit
+                            withAnimation {
+                                // Dismiss the sheet first
+                                dismiss()
+                                
+                                // Perform deletion and save after a delay
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                    modelContext.delete(habit) // Delete the habit
+                                    
+                                    do {
+                                        try modelContext.save() // Save after deletion
+                                    } catch {
+                                        print("Failed to save after deleting habit: \(error)")
+                                    }
+                                }
+                            }
                         } label: {
                             ZStack {
                                 Image(systemName: "trash")
@@ -160,8 +176,4 @@ struct HabitDetailView: View {
         .padding()
         .preferredColorScheme(.dark)
     }
-}
-
-#Preview {
-    HabitDetailView(habit: "10,000 Steps", icon: "figure.walk", streak: 4, completed: true)
 }

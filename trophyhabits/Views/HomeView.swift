@@ -7,41 +7,44 @@
 
 import SwiftUI
 import ConfettiSwiftUI
+import SwiftData
 
 struct HomeView: View {
-    
-    @State private var selectedDate: Date = Date() // Default to today
-    
-    @State private var habits = Array(repeating: false, count: 6)
-    @State private var medalUpgrade = false
-    
-    @State private var showConfetti: Int = 0
-    @State private var isCooldownActive: Bool = false // Cooldown state
+    @Environment(\.modelContext) private var modelContext
+    @Query(sort: \Habit.habit) private var habits: [Habit]
 
-    var trueCount: Int {
-        habits.filter { $0 }.count
+    private let columns = [
+        GridItem(.flexible(), spacing: 15),
+        GridItem(.flexible(), spacing: 15),
+        GridItem(.flexible(), spacing: 15),
+    ]
+
+    @State private var selectedDate: Date = Date()
+    @State private var medalUpgrade = false
+    @State private var showConfetti: Int = 0
+    @State private var isCooldownActive: Bool = false
+    @State private var activeSheet: ActiveSheet?
+
+    // Computed Properties
+    private var trueCount: Int {
+        habits.filter { $0.dayCompletion[dataDateString(for: selectedDate)] ?? false }.count
     }
-    
-    var allCompleted: Bool {
+
+    private var allCompleted: Bool {
         trueCount == habits.count
     }
 
-    var progress: Double {
-        Double(trueCount) / Double(habits.count)
+    private var progress: Double {
+        habits.isEmpty ? 0.0 : Double(trueCount) / Double(habits.count)
     }
 
-    // Sheets
-    @State private var activeSheet: ActiveSheet?
-    
     enum ActiveSheet: Identifiable {
         case trophyRoom, calendar
-        
+
         var id: String {
             switch self {
-            case .trophyRoom:
-                return "trophyRoom"
-            case .calendar:
-                return "calendar"
+            case .trophyRoom: return "trophyRoom"
+            case .calendar: return "calendar"
             }
         }
     }
@@ -49,70 +52,48 @@ struct HomeView: View {
     var body: some View {
         NavigationView {
             VStack(spacing: 0) {
-                
-                // This week calendar
-                VStack(spacing: 15) {
-                    VStack {
-                        let calendar = Calendar.current
-                        let today = Date()
-                        let startOfWeek = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: today))!
-                        WeekView(startDate: startOfWeek, selectedDate: $selectedDate)
-                    }
-                }
-                .padding(.top, 10)
+                // Week Calendar
+                WeekCalendarView(selectedDate: $selectedDate)
 
                 Spacer()
 
-                // Progress circle
+                // Progress View
                 ProgressView(progress: progress, medalUpgrade: $medalUpgrade, trueCount: trueCount)
                     .onChange(of: trueCount) { oldValue, newValue in
-                        if newValue > oldValue && (newValue == 2 || newValue == 4 || newValue == 6) {
+                        if newValue > oldValue && newValue % 2 == 0 {
                             medalUpgrade.toggle()
+                            showConfetti += 1
                         }
                     }
 
                 Spacer()
 
-                // Habit tiles
-                VStack(spacing: 15) {
-                    habitRow(habits: [
-                        ("pencil.and.scribble", "Review Notes", 2),
-                        ("apple.terminal", "Leetcode Problem", 3),
-                        ("carrot.fill", "Snack Less", 0)
-                    ], startIndex: 0)
-
-                    habitRow(habits: [
-                        ("figure.walk.motion", "10,000 Steps", 0),
-                        ("bolt.fill", "Charge Devices", 0),
-                        ("bed.double.fill", "8 Hours of Sleep", 0)
-                    ], startIndex: 3)
-
-                    HStack(spacing: 5) {
-                        Image(systemName: "info.circle")
-                        Text("Tap and Hold for Habit Details")
+                VStack {
+                    // Habit Grid
+                    LazyVGrid(columns: columns, spacing: 15) {
+                        ForEach(habits, id: \.id) { habit in
+                            HabitView(habit: habit, selectedDate: selectedDate)
+                        }
+                        if habits.count < 6 {
+                            AddHabitCard(action: addHabit)
+                        }
                     }
-                    .font(.footnote)
-                    .fontWeight(.regular)
-                    .fontDesign(.rounded)
-                    .foregroundStyle(.gray)
+                    .animation(.easeInOut, value: habits)
+                    
+                    Spacer()
                 }
-                .padding(.top, 10)
+                .padding(25)
+                .padding(.bottom, 10)
                 .frame(maxWidth: .infinity, maxHeight: 375)
-                .padding(.bottom)
                 .background(.ultraThinMaterial)
                 .cornerRadius(32)
             }
             .ignoresSafeArea(edges: .bottom)
-            
-            // Topbar sheet prompters
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Button {
-                        // Placeholder for settings action
-                    } label: {
-                        Image(systemName: "gearshape.fill")
-                            .foregroundStyle(.gray)
+                    Button(action: {}) {
+                        Image(systemName: "gearshape.fill").foregroundStyle(.gray)
                     }
                 }
 
@@ -122,10 +103,9 @@ struct HomeView: View {
                     } label: {
                         HStack {
                             Image(systemName: "calendar")
-                                .font(.subheadline)
                             Text(dateString(for: selectedDate))
-                                .font(.title3)
                         }
+                        .font(.title3)
                         .fontWeight(.semibold)
                         .fontDesign(.rounded)
                         .foregroundStyle(.white)
@@ -134,88 +114,71 @@ struct HomeView: View {
 
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
-                        activeSheet = .trophyRoom
+                        withAnimation { addHabit() }
                     } label: {
-                        Image(systemName: "trophy.fill")
-                            .resizable()
-                            .aspectRatio(contentMode: .fit)
-                            .frame(height: 25)
-                            .foregroundStyle(.yellow)
+                        Label("Add Habit", systemImage: "plus")
                     }
+                    .disabled(habits.count >= 6)
                 }
             }
-            .onChange(of: allCompleted) {
-                if $0 && !isCooldownActive {
-                    triggerConfettiWithCooldown()
+            .sheet(item: $activeSheet) { sheet in
+                switch sheet {
+                case .trophyRoom:
+                    TrophyAndMedalStatsView()
+                        .presentationDetents([.fraction(0.7)])
+                        .presentationCornerRadius(32)
+                case .calendar:
+                    CalendarSheet()
+                        .presentationDetents([.fraction(0.84)])
+                        .presentationCornerRadius(32)
                 }
             }
-        }
-        .sheet(item: $activeSheet) { sheet in
-            switch sheet {
-            case .trophyRoom:
-                TrophyAndMedalStatsView()
-                    .presentationDetents([.fraction(0.7)])
-                    .presentationCornerRadius(32)
-            case .calendar:
-                CalendarSheet()
-                    .presentationDetents([.fraction(0.84)])
-                    .presentationCornerRadius(32)
-            }
-        }
-        .preferredColorScheme(.dark)
-        .confettiCannon(
-            counter: $showConfetti,
-            num: 25, colors: [Color.yellow, Color.yellow.opacity(0.5), Color.yellow.opacity(0.75), Color.yellow.opacity(0.25)], // Number of particles
-            confettiSize: 10, // Size of particles
-            radius: 300, // Spread radius
-            repetitions: 1, // Single explosion
-            repetitionInterval: 0.1 // Minimal interval (not relevant for 1 repetition)
-        )
-    }
-    
-    func triggerConfettiWithCooldown() {
-        // Trigger the confetti
-        showConfetti += 1
-        // Activate the cooldown
-        isCooldownActive = true
-
-        // Set cooldown duration (e.g., 3 seconds)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
-            isCooldownActive = false
+            .preferredColorScheme(.dark)
+            .confettiCannon(counter: $showConfetti, num: 25, colors: [.yellow, .gray], confettiSize: 10, radius: 300)
         }
     }
 
-    func habitRow(habits: [(String, String, Int)], startIndex: Int) -> some View {
-        HStack(spacing: 15) {
-            ForEach(0..<habits.count, id: \.self) { index in
-                HabitView(
-                    icon: habits[index].0,
-                    habit: habits[index].1,
-                    completed: $habits[startIndex + index],
-                    streak: habits[index].2
-                )
-            }
-        }
-    }
-    
-    func countColor(for count: Int) -> Color {
-        switch count {
-        case ..<2: return .clear
-        case ..<4: return .brown
-        case ..<6: return .gray
-        case 6: return .yellow
-        default: return .clear // Optional: handle unexpected values
+    private func addHabit() {
+        let newHabit = Habit(icon: "star", habit: "New Habit", dayCompletion: [:], streak: 0)
+        modelContext.insert(newHabit)
+        do {
+            try modelContext.save()
+        } catch {
+            print("Error saving habit: \(error)")
         }
     }
 }
 
+func dataDateString(for date: Date) -> String {
+    let formatter = DateFormatter()
+    formatter.dateFormat = "yyyy-MM-dd"
+    return formatter.string(from: date)
+}
 
+struct AddHabitCard: View {
+    var action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            ZStack {
+                VStack(spacing: 15) {
+                    Image(systemName: "plus")
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 50, height: 50)
+                        .foregroundStyle(.gray)
+                }
+                .frame(width: 105, height: 145)
+                .background(Color(red: 0.2, green: 0.2, blue: 0.2))
+                .cornerRadius(20)
+            }
+        }
+    }
+}
 
 struct HabitView: View {
-    var icon: String
-    var habit: String
-    @Binding var completed: Bool
-    var streak: Int
+    var habit: Habit
+    var selectedDate: Date
 
     @State private var isDetailSheetPresented = false
 
@@ -226,24 +189,24 @@ struct HabitView: View {
             } label: {
                 ZStack {
                     VStack(spacing: 15) {
-                        Image(systemName: icon)
+                        Image(systemName: habit.icon)
                             .resizable()
                             .aspectRatio(contentMode: .fit)
                             .frame(width: 50, height: 50)
-                            .foregroundStyle(completed ? .gray : .white)
+                            .foregroundStyle(habit.dayCompletion[dataDateString(for: selectedDate)] ?? false ? .gray : .white)
 
-                        Text(habit)
+                        Text(habit.habit)
                             .font(.headline)
                             .fontDesign(.rounded)
                             .fontWeight(.semibold)
                             .multilineTextAlignment(.center)
                             .frame(width: 75, height: 50)
                             .foregroundStyle(.white)
-                            .strikethrough(completed)
+                            .strikethrough(habit.dayCompletion[dataDateString(for: selectedDate)] ?? false)
                     }
                 }
-                .padding()
-                .background(completed ? .clear : Color(red: 0.2, green: 0.2, blue: 0.2))
+                .frame(width: 105, height: 145)
+                .background(habit.dayCompletion[dataDateString(for: selectedDate)] ?? false ? .clear : Color(red: 0.2, green: 0.2, blue: 0.2))
                 .cornerRadius(20)
             }
             .simultaneousGesture(LongPressGesture().onEnded { _ in
@@ -251,11 +214,11 @@ struct HabitView: View {
             })
             .simultaneousGesture(TapGesture().onEnded {
                 withAnimation(.bouncy) {
-                    completed.toggle()
+                    habit.dayCompletion[dataDateString(for: selectedDate)]?.toggle()
                 }
             })
 
-            if streak > 0 {
+            if habit.streak > 0 {
                 ZStack {
                     Image(systemName: "flame.fill")
                         .resizable()
@@ -267,7 +230,7 @@ struct HabitView: View {
                         .frame(width: 25, height: 27.5)
                         .foregroundStyle(.red.opacity(1))
 
-                    Text("\(streak)")
+                    Text("\(habit.streak)")
                         .font(.headline)
                         .fontWeight(.bold)
                         .foregroundStyle(.white)
@@ -277,14 +240,26 @@ struct HabitView: View {
             }
         }
         .sheet(isPresented: $isDetailSheetPresented) {
-            HabitDetailView(habit: habit, icon: icon, streak: streak, completed: completed)
+            HabitDetailView(habit: habit)
                 .presentationDetents(.init([.fraction(0.6)]))
                 .presentationCornerRadius(32)
         }
     }
 }
 
+struct WeekCalendarView: View {
+    @Binding var selectedDate: Date
 
+    var body: some View {
+        VStack(spacing: 15) {
+            let calendar = Calendar.current
+            let today = Date()
+            let startOfWeek = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: today))!
+            WeekView(startDate: startOfWeek, selectedDate: $selectedDate)
+        }
+        .padding(.top, 10)
+    }
+}
 
 func randomMedalColor() -> Color {
     let colors: [Color] = [.yellow, .brown, .gray, .clear]
@@ -296,8 +271,10 @@ func randomTrophyColor() -> Color {
     return colors.randomElement() ?? .yellow
 }
 
-
-
 #Preview {
-    HomeView()
+    let config = ModelConfiguration(isStoredInMemoryOnly: true)
+    let container = try! ModelContainer(for: Habit.self, configurations: config)
+
+    return HomeView()
+        .modelContainer(container)
 }

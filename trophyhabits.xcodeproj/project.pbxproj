@@ -15,7 +15,7 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		910C45402D11D5160045ACAB /* trophyhabits */ = {
+		912A8D482D264F2900EBC1D5 /* trophyhabits */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = trophyhabits;
 			sourceTree = "<group>";
@@ -37,7 +37,7 @@
 		910C45352D11D5160045ACAB = {
 			isa = PBXGroup;
 			children = (
-				910C45402D11D5160045ACAB /* trophyhabits */,
+				912A8D482D264F2900EBC1D5 /* trophyhabits */,
 				910C453F2D11D5160045ACAB /* Products */,
 			);
 			sourceTree = "<group>";
@@ -66,7 +66,7 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				910C45402D11D5160045ACAB /* trophyhabits */,
+				912A8D482D264F2900EBC1D5 /* trophyhabits */,
 			);
 			name = trophyhabits;
 			packageProductDependencies = (
