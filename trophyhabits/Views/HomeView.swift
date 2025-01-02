@@ -20,7 +20,11 @@ struct HomeView: View {
     ]
 
     @State private var selectedDate: Date = Date()
+    @State private var previousDate: Date = Date() // Tracks previously selected date
+
     @State private var medalUpgrade = false
+    @State private var previousProgress: Double = 0.0 // Track previous progress
+
     @State private var showConfetti: Int = 0
     @State private var isCooldownActive: Bool = false
     @State private var activeSheet: ActiveSheet?
@@ -59,11 +63,16 @@ struct HomeView: View {
 
                 // Progress View
                 ProgressView(progress: progress, medalUpgrade: $medalUpgrade, trueCount: trueCount)
-                    .onChange(of: trueCount) { oldValue, newValue in
-                        if newValue > oldValue && newValue % 2 == 0 {
-                            medalUpgrade.toggle()
-                            showConfetti += 1
+                    .onChange(of: allCompleted) {
+                        if selectedDate == previousDate && allCompleted && !isCooldownActive {
+                            triggerConfettiWithCooldown()
                         }
+                    }
+                    .onChange(of: selectedDate) {
+                        previousDate = selectedDate // Update the previous date whenever the selected date changes
+                    }
+                    .onChange(of: progress) {
+                        triggerMedalUpgradeIfNeeded()
                     }
 
                 Spacer()
@@ -134,8 +143,37 @@ struct HomeView: View {
                 }
             }
             .preferredColorScheme(.dark)
-            .confettiCannon(counter: $showConfetti, num: 25, colors: [.yellow, .gray], confettiSize: 10, radius: 300)
+            .confettiCannon(counter: $showConfetti, num: 30, colors: [.yellow, .gray, .brown], confettiSize: 15, rainHeight: 200, radius: 350)
         }
+    }
+    
+    private func triggerConfettiWithCooldown() {
+        // Trigger the confetti
+        showConfetti += 1
+        // Activate cooldown
+        isCooldownActive = true
+
+        // Set cooldown duration (e.g., 3 seconds)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+            isCooldownActive = false
+        }
+    }
+    
+    private func triggerMedalUpgradeIfNeeded() {
+        let thresholds: [(Double, String)] = [
+            (0.33, "bronze"),
+            (0.66, "silver"),
+            (1.0, "gold")
+        ]
+        
+        for (threshold, _) in thresholds {
+            if previousProgress < threshold && progress >= threshold {
+                medalUpgrade.toggle()
+                break // Trigger only one medal upgrade per progress change
+            }
+        }
+
+        previousProgress = progress // Update the previous progress
     }
 
     private func addHabit() {
@@ -214,7 +252,12 @@ struct HabitView: View {
             })
             .simultaneousGesture(TapGesture().onEnded {
                 withAnimation(.bouncy) {
-                    habit.dayCompletion[dataDateString(for: selectedDate)]?.toggle()
+                    if let currentValue = habit.dayCompletion[dataDateString(for: selectedDate)] {
+                        habit.dayCompletion[dataDateString(for: selectedDate)] = !currentValue
+                    } else {
+                        habit.dayCompletion[dataDateString(for: selectedDate)] = true
+                    }
+
                 }
             })
 

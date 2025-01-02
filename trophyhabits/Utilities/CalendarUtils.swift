@@ -6,43 +6,49 @@ struct DayView: View {
     @State var medalColor: Color = .yellow
 
     var body: some View {
-        ZStack(alignment: .topTrailing) {
-            VStack {
-                // Day of the week
-                Text(dateToDayLetter())
-                    .font(.subheadline)
-
-                // Date number
-                Text(String(dayNumber()))
-                    .font(.headline)
-            }
-            .fontDesign(.rounded)
-            .fontWeight(.semibold)
-            .foregroundStyle(.white)
-            .frame(width: 24, height: 35)
-            .padding(10)
-            .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(isPastDay() ? randomDayColor() : Color(red: 0.2, green: 0.2, blue: 0.2))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(isSelectedDay() ? Color.white : Color.clear, lineWidth: 2.5)
-            )
-            .onTapGesture {
-                withAnimation {
-                    selectedDate = date // Update selected date
+        VStack(spacing: 7.5){
+            ZStack(alignment: .topTrailing) {
+                VStack {
+                    // Day of the week
+                    Text(dateToDayLetter())
+                        .font(.subheadline)
+                    
+                    // Date number
+                    Text(String(dayNumber()))
+                        .font(.headline)
                 }
+                .fontDesign(.rounded)
+                .fontWeight(.semibold)
+                .foregroundStyle(.white)
+                .frame(width: 24, height: 35)
+                .padding(10)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(isPastDay() ? randomDayColor() : Color(red: 0.2, green: 0.2, blue: 0.2))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(isSelectedDay() ? Color.white : Color.clear, lineWidth: 2.5)
+                )
+                .onTapGesture {
+                    withAnimation {
+                        selectedDate = date // Update selected date
+                    }
+                }
+                
+                // Medal icon in the top-right corner
+                //            if isPastDay() {
+                //                Image(systemName: "medal.star.fill")
+                //                    .resizable()
+                //                    .aspectRatio(contentMode: .fit)
+                //                    .frame(width: 15)
+                //                    .foregroundStyle(medalColor)
+                //            }
             }
-
-            // Medal icon in the top-right corner
-//            if isPastDay() {
-//                Image(systemName: "medal.star.fill")
-//                    .resizable()
-//                    .aspectRatio(contentMode: .fit)
-//                    .frame(width: 15)
-//                    .foregroundStyle(medalColor)
-//            }
+            
+            Circle()
+                .foregroundStyle(isCurrentDay(date: date) ? .white : .clear)
+                .frame(width: 5)
         }
         .onAppear {
             medalColor = randomMedalColor()
@@ -58,6 +64,10 @@ struct DayView: View {
 
     func isSelectedDay() -> Bool {
         Calendar.current.isDate(selectedDate, inSameDayAs: date)
+    }
+    
+    func isCurrentDay(date: Date) -> Bool {
+        Calendar.current.isDateInToday(date)
     }
 
     func dayNumber() -> Int {
