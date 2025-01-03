@@ -1,9 +1,11 @@
 import SwiftUI
+import SwiftData
 
 struct DayView: View {
+    @Query(sort: \Habit.habit) private var habits: [Habit]
     var date: Date
     @Binding var selectedDate: Date // Bind to the selected day in WeekView
-    @State var medalColor: Color = .yellow
+    @State var medalColor: Color = .clear
 
     var body: some View {
         VStack(spacing: 7.5){
@@ -24,7 +26,11 @@ struct DayView: View {
                 .padding(10)
                 .background(
                     RoundedRectangle(cornerRadius: 12)
-                        .fill(isPastDay() ? randomDayColor() : Color(red: 0.2, green: 0.2, blue: 0.2))
+                        .fill(
+                            isFutureDay() ? Color(red: 0.1, green: 0.1, blue: 0.1) :
+                            (isPastDay() || isCurrentDay(date: date)) ? medalColor :
+                            Color(red: 0.2, green: 0.2, blue: 0.2)
+                        )
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)
@@ -32,7 +38,12 @@ struct DayView: View {
                 )
                 .onTapGesture {
                     withAnimation {
-                        selectedDate = date // Update selected date
+                        if !isFutureDay() {
+                            withAnimation {
+                                selectedDate = date
+                                calculateMedalColor()
+                            }
+                        }
                     }
                 }
                 
@@ -48,10 +59,16 @@ struct DayView: View {
             
             Circle()
                 .foregroundStyle(isCurrentDay(date: date) ? .white : .clear)
-                .frame(width: 5)
+                .frame(width: 6.66)
         }
         .onAppear {
-            medalColor = randomMedalColor()
+            calculateMedalColor()
+        }
+        .onChange(of: habits.filter { $0.dayCompletion[dataDateString(for: date)] == true }.count) {
+            calculateMedalColor()
+        }
+        .onChange(of: habits.count) {
+            calculateMedalColor()
         }
         .preferredColorScheme(.dark)
     }
@@ -69,6 +86,12 @@ struct DayView: View {
     func isCurrentDay(date: Date) -> Bool {
         Calendar.current.isDateInToday(date)
     }
+    
+    func isFutureDay() -> Bool {
+        let today = Calendar.current.startOfDay(for: Date())
+        let thisDay = Calendar.current.startOfDay(for: date)
+        return thisDay > today
+    }
 
     func dayNumber() -> Int {
         Calendar.current.component(.day, from: date)
@@ -78,6 +101,26 @@ struct DayView: View {
         let formatter = DateFormatter()
         formatter.dateFormat = "E"
         return String(formatter.string(from: date).prefix(1))
+    }
+    
+    func calculateMedalColor() {
+        let dateKey = dataDateString(for: date)
+        
+        let completedHabits = habits.filter { $0.dayCompletion[dateKey] == true }
+        let completionPercentage = Double(completedHabits.count) / Double(habits.count)
+
+        withAnimation {
+            switch completionPercentage {
+            case 1.0:
+                medalColor = .yellow.opacity(0.7)
+            case 0.66...0.99:
+                medalColor = .gray.opacity(0.65)
+            case 0.33...0.65:
+                medalColor = .brown.opacity(0.6)
+            default:
+                medalColor = Color(red: 0.2, green: 0.2, blue: 0.2)
+            }
+        }
     }
 }
 

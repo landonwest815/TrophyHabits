@@ -14,9 +14,9 @@ struct HomeView: View {
     @Query(sort: \Habit.habit) private var habits: [Habit]
 
     private let columns = [
-        GridItem(.flexible(), spacing: 15),
-        GridItem(.flexible(), spacing: 15),
-        GridItem(.flexible(), spacing: 15),
+        GridItem(.flexible()),
+        GridItem(.flexible()),
+        GridItem(.flexible()),
     ]
 
     @State private var selectedDate: Date = Date()
@@ -77,23 +77,15 @@ struct HomeView: View {
 
                 Spacer()
 
-                VStack {
-                    // Habit Grid
-                    LazyVGrid(columns: columns, spacing: 15) {
-                        ForEach(habits, id: \.id) { habit in
-                            HabitView(habit: habit, selectedDate: selectedDate)
-                        }
-                        if habits.count < 6 {
-                            AddHabitCard(action: addHabit)
-                        }
-                    }
-                    .animation(.easeInOut, value: habits)
-                    
-                    Spacer()
-                }
-                .padding(25)
+                HabitGridView(
+                    habits: habits,
+                    selectedDate: selectedDate,
+                    addHabit: addHabit,
+                    columns: columns
+                )
+                .frame(maxWidth: .infinity, maxHeight: 333)
+                .padding(20)
                 .padding(.bottom, 10)
-                .frame(maxWidth: .infinity, maxHeight: 375)
                 .background(.ultraThinMaterial)
                 .cornerRadius(32)
             }
@@ -113,8 +105,8 @@ struct HomeView: View {
                         HStack {
                             Image(systemName: "calendar")
                             Text(dateString(for: selectedDate))
+                                .font(.title3)
                         }
-                        .font(.title3)
                         .fontWeight(.semibold)
                         .fontDesign(.rounded)
                         .foregroundStyle(.white)
@@ -193,6 +185,30 @@ func dataDateString(for date: Date) -> String {
     return formatter.string(from: date)
 }
 
+struct HabitGridView: View {
+    var habits: [Habit]
+    var selectedDate: Date
+    var addHabit: () -> Void
+    var columns: [GridItem]
+
+    var body: some View {
+        VStack {
+            // Habit Grid
+            LazyVGrid(columns: columns, spacing: 15) {
+                ForEach(habits, id: \.id) { habit in
+                    HabitView(habit: habit, selectedDate: selectedDate)
+                }
+                if habits.count < 6 {
+                    AddHabitCard(action: addHabit)
+                }
+            }
+            .animation(.easeInOut, value: habits)
+            
+            Spacer()
+        }
+    }
+}
+
 struct AddHabitCard: View {
     var action: () -> Void
 
@@ -206,50 +222,53 @@ struct AddHabitCard: View {
                         .frame(width: 50, height: 50)
                         .foregroundStyle(.gray)
                 }
-                .frame(width: 105, height: 145)
-                .background(Color(red: 0.2, green: 0.2, blue: 0.2))
+                .frame(width: 107.5, height: 145)
+                .background(Color(red: 0.15, green: 0.15, blue: 0.15))
                 .cornerRadius(20)
             }
         }
     }
 }
 
+import SwiftUI
+import CoreHaptics
+
 struct HabitView: View {
     var habit: Habit
     var selectedDate: Date
 
     @State private var isDetailSheetPresented = false
+    @State private var dragOffset: CGFloat = 0
+    @State private var hasReachedMaxDistance: Bool = false
+
+    private let maxDragDistance: CGFloat = -15 // Maximum drag distance (negative for upward drag)
 
     var body: some View {
         ZStack(alignment: .topTrailing) {
-            Button {
-                // Action handled by gestures
-            } label: {
-                ZStack {
-                    VStack(spacing: 15) {
-                        Image(systemName: habit.icon)
-                            .resizable()
-                            .aspectRatio(contentMode: .fit)
-                            .frame(width: 50, height: 50)
-                            .foregroundStyle(habit.dayCompletion[dataDateString(for: selectedDate)] ?? false ? .gray : .white)
+            VStack(spacing: 10) {
+                Image(systemName: habit.icon)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 50, height: 50)
+                    .foregroundStyle(habit.dayCompletion[dataDateString(for: selectedDate)] ?? false ? .gray : .white)
 
-                        Text(habit.habit)
-                            .font(.headline)
-                            .fontDesign(.rounded)
-                            .fontWeight(.semibold)
-                            .multilineTextAlignment(.center)
-                            .frame(width: 75, height: 50)
-                            .foregroundStyle(.white)
-                            .strikethrough(habit.dayCompletion[dataDateString(for: selectedDate)] ?? false)
-                    }
-                }
-                .frame(width: 105, height: 145)
-                .background(habit.dayCompletion[dataDateString(for: selectedDate)] ?? false ? .clear : Color(red: 0.2, green: 0.2, blue: 0.2))
-                .cornerRadius(20)
+                Text(habit.habit)
+                    .font(.headline)
+                    .fontDesign(.rounded)
+                    .fontWeight(.semibold)
+                    .multilineTextAlignment(.center)
+                    .frame(width: 75, height: 50)
+                    .foregroundStyle(.white)
+                    .strikethrough(habit.dayCompletion[dataDateString(for: selectedDate)] ?? false)
             }
-            .simultaneousGesture(LongPressGesture().onEnded { _ in
-                isDetailSheetPresented.toggle()
-            })
+            .frame(width: 107.5, height: 145)
+            .background(habit.dayCompletion[dataDateString(for: selectedDate)] ?? false ? .clear : Color(red: 0.2, green: 0.2, blue: 0.2))
+            .cornerRadius(20)
+            .overlay(
+                RoundedRectangle(cornerRadius: 20)
+                    .stroke(hasReachedMaxDistance ? Color.white : Color.clear, lineWidth: 2.5)
+            )
+            .offset(y: dragOffset)
             .simultaneousGesture(TapGesture().onEnded {
                 withAnimation(.bouncy) {
                     if let currentValue = habit.dayCompletion[dataDateString(for: selectedDate)] {
@@ -260,6 +279,37 @@ struct HabitView: View {
 
                 }
             })
+            .gesture(
+                DragGesture()
+                    .onChanged { value in
+                        withAnimation {
+                            // Constrain dragOffset to the maxDragDistance
+                            if value.translation.height < 0 {
+                                dragOffset = max(value.translation.height, maxDragDistance)
+                            }
+                            // Check if the threshold is reached
+                            if dragOffset <= maxDragDistance && !hasReachedMaxDistance {
+                                hasReachedMaxDistance = true
+                            } else if dragOffset > maxDragDistance {
+                                hasReachedMaxDistance = false
+                            }
+                        }
+                    }
+                    .onEnded { value in
+                        // Check if the drag reached the threshold
+                        if dragOffset <= maxDragDistance {
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                isDetailSheetPresented = true
+                            }
+                        }
+                        // Reset dragOffset to 0
+                        withAnimation {
+                            dragOffset = 0
+                            hasReachedMaxDistance = false
+                        }
+                    }
+            )
+            .sensoryFeedback(.impact, trigger: hasReachedMaxDistance)
 
             if habit.streak > 0 {
                 ZStack {
@@ -290,6 +340,7 @@ struct HabitView: View {
     }
 }
 
+
 struct WeekCalendarView: View {
     @Binding var selectedDate: Date
 
@@ -297,12 +348,77 @@ struct WeekCalendarView: View {
         VStack(spacing: 15) {
             let calendar = Calendar.current
             let today = Date()
-            let startOfWeek = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: today))!
-            WeekView(startDate: startOfWeek, selectedDate: $selectedDate)
+            let startOfWeek = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: selectedDate))!
+            let endOfWeek = calendar.date(byAdding: .day, value: 6, to: startOfWeek)!
+
+            ZStack(alignment: .bottomTrailing) {
+                WeekView(startDate: startOfWeek, selectedDate: $selectedDate)
+                    .gesture(
+                        DragGesture()
+                            .onEnded { value in
+                                if value.translation.width < -50 { // Swipe left
+                                    withAnimation {
+                                        moveToNextWeek(today: today)
+                                    }
+                                } else if value.translation.width > 50 { // Swipe right
+                                    withAnimation {
+                                        moveToPreviousWeek()
+                                    }
+                                }
+                            }
+                    )
+                
+                if !(today > startOfWeek && today <= endOfWeek) {
+                    Button(action: {
+                        withAnimation {
+                            selectedDate = today
+                        }
+                    }) {
+                        HStack(spacing: 5) {
+                            Text("Go to Today")
+                            Image(systemName: "arrow.right.circle")
+                        }
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                        .fontDesign(.rounded)
+                        .foregroundStyle(.white)
+                        .offset(y: 12.5)
+                    }
+                }
+            }
         }
         .padding(.top, 10)
     }
+
+    func moveToNextWeek(today: Date) {
+        let calendar = Calendar.current
+        let sameWeekDay = calendar.date(byAdding: .day, value: 7, to: selectedDate)!
+        let nextWeekStart = calendar.date(byAdding: .day, value: 7, to: calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: selectedDate))!)!
+        let nextWeekEnd = calendar.date(byAdding: .day, value: 6, to: nextWeekStart)!
+
+        // Check if today's date is within the next week
+        if today <= sameWeekDay {
+            selectedDate = today // If today is within the next week, select today
+        } else if today > nextWeekEnd || today > sameWeekDay {
+            selectedDate = sameWeekDay
+        }
+        
+    }
+
+    func moveToPreviousWeek() {
+        let calendar = Calendar.current
+        selectedDate = calendar.date(byAdding: .day, value: -7, to: selectedDate)!
+    }
+
+    func formattedWeekDate(_ startOfWeek: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMMM d"
+        let calendar = Calendar.current
+        let endOfWeek = calendar.date(byAdding: .day, value: 6, to: startOfWeek)!
+        return "\(formatter.string(from: startOfWeek)) - \(formatter.string(from: endOfWeek))"
+    }
 }
+
 
 func randomMedalColor() -> Color {
     let colors: [Color] = [.yellow, .brown, .gray, .clear]

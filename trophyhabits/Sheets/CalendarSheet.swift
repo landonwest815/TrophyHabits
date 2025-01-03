@@ -74,11 +74,11 @@ struct CalendarSheet: View {
                             displayedMonth = Date()
                         }
                     } label: {
-                        HStack {
+                        HStack(spacing: 5) {
                             Text("Go to Today")
                             Image(systemName: "arrow.right.circle")
                         }
-                        .font(.headline)
+                        .font(.subheadline)
                         .fontWeight(.semibold)
                         .fontDesign(.rounded)
                         .foregroundStyle(.white)
