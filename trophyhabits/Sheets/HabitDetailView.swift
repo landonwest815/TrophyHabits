@@ -13,6 +13,9 @@ struct HabitDetailView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     
+    @State private var isEditingName = false
+    @State private var tempHabitName = ""
+    
     var habit: Habit
 
     var body: some View {
@@ -25,8 +28,19 @@ struct HabitDetailView: View {
                     ZStack {
                         
                         VStack(spacing: 15) {
-                            Button {
-                                // change icon
+                            Menu {
+                                // Provide a list of available icons for the user to choose from
+                                ForEach(["star.fill", "heart.fill", "flame.fill", "leaf.fill", "bolt.fill"], id: \.self) { iconName in
+                                    Button {
+                                        // Change the icon to the selected one
+                                        habit.icon = iconName
+                                    } label: {
+                                        HStack {
+                                            Image(systemName: iconName)
+                                            Text(iconName.capitalized) // Optional: Add a label for each icon
+                                        }
+                                    }
+                                }
                             } label: {
                                 Image(systemName: habit.icon)
                                     .resizable()
@@ -35,23 +49,43 @@ struct HabitDetailView: View {
                                     .foregroundStyle(.white)
                             }
 
-                            Button {
-                                // change habit
-                            } label: {
-                                Text(habit.habit)
-                                    .font(.title2)
-                                    .fontDesign(.rounded)
-                                    .fontWeight(.semibold)
-                                    .multilineTextAlignment(.center)
-                                    .frame(width: 112.5, height: 75)
-                                    .foregroundStyle(.white)
-                            }
+                               
+                            TextField("Enter habit name", text: $tempHabitName, axis: .vertical)
+                                .lineLimit(2, reservesSpace: true)
+                                .font(.title2)
+                                .fontDesign(.rounded)
+                                .fontWeight(.semibold)
+                                .multilineTextAlignment(.center)
+                                .frame(width: 112.5, height: 75)
+                                .foregroundStyle(.white)
+                                .onAppear {
+                                    tempHabitName = habit.habit // Pre-fill with the current name
+                                }
+                                .submitLabel(.done)
+                                .onChange(of: tempHabitName) { newValue in
+                                    guard let newValueLastChar = newValue.last else { return }
+                                    if newValueLastChar == "\n" {
+                                        
+                                        tempHabitName.removeLast()
+                                        print("submission!")
+                                        habit.habit = tempHabitName
+                                        
+                                        do {
+                                            try modelContext.save()
+                                        } catch {
+                                            print("Error saving habit: \(error)")
+                                        }
+                                        
+                                        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                                    }
+                                }
+                            
                         }
                         
                     }
-                    .padding()
+                    .frame(width: 160, height: 215)
                     .background(Color(red: 0.2, green: 0.2, blue: 0.2))
-                    .cornerRadius(20)
+                    .cornerRadius(32)
 
                     
                     // habit archival/deletion
@@ -63,10 +97,10 @@ struct HabitDetailView: View {
                                 Image(systemName: "archivebox.fill")
                                     .resizable()
                                     .aspectRatio(contentMode: .fit)
-                                    .frame(width: 30, height: 30)
+                                    .frame(width: 25, height: 25)
                                     .foregroundStyle(.white)
                             }
-                            .frame(width: 30, height: 30)
+                            .frame(width: 25, height: 25)
                             .padding()
                             .background(Color(red: 0.2, green: 0.2, blue: 0.2))
                             .cornerRadius(20)
@@ -93,10 +127,10 @@ struct HabitDetailView: View {
                                 Image(systemName: "trash")
                                     .resizable()
                                     .aspectRatio(contentMode: .fit)
-                                    .frame(width: 30, height: 30)
+                                    .frame(width: 25, height: 25)
                                     .foregroundStyle(.white)
                             }
-                            .frame(width: 30, height: 30)
+                            .frame(width: 25, height: 25)
                             .padding()
                             .background(.red)
                             .cornerRadius(20)
@@ -176,4 +210,13 @@ struct HabitDetailView: View {
         .padding()
         .preferredColorScheme(.dark)
     }
+}
+
+#Preview {
+    let config = ModelConfiguration(isStoredInMemoryOnly: true)
+    let container = try! ModelContainer(for: Habit.self, configurations: config)
+    let habit = Habit(icon: "pencil", habit: "Write Notes")
+    
+    HabitDetailView(habit: habit)
+        .modelContainer(container)
 }

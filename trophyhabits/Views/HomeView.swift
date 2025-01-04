@@ -11,7 +11,7 @@ import SwiftData
 
 struct HomeView: View {
     @Environment(\.modelContext) private var modelContext
-    @Query(sort: \Habit.habit) private var habits: [Habit]
+    @Query(sort: \Habit.id) private var habits: [Habit]
 
     private let columns = [
         GridItem(.flexible()),
@@ -266,7 +266,7 @@ struct HabitView: View {
             .cornerRadius(20)
             .overlay(
                 RoundedRectangle(cornerRadius: 20)
-                    .stroke(hasReachedMaxDistance ? Color.white : Color.clear, lineWidth: 2.5)
+                    .stroke(hasReachedMaxDistance ? Color.white.opacity(0.75) : Color.clear, lineWidth: 2.5)
             )
             .offset(y: dragOffset)
             .simultaneousGesture(TapGesture().onEnded {
@@ -349,7 +349,7 @@ struct WeekCalendarView: View {
             let calendar = Calendar.current
             let today = Date()
             let startOfWeek = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: selectedDate))!
-            let endOfWeek = calendar.date(byAdding: .day, value: 6, to: startOfWeek)!
+            let startOfNextWeek = calendar.date(byAdding: .day, value: 7, to: startOfWeek)!
 
             ZStack(alignment: .bottomTrailing) {
                 WeekView(startDate: startOfWeek, selectedDate: $selectedDate)
@@ -368,7 +368,7 @@ struct WeekCalendarView: View {
                             }
                     )
                 
-                if !(today > startOfWeek && today <= endOfWeek) {
+                if !(today > startOfWeek && today <= startOfNextWeek) {
                     Button(action: {
                         withAnimation {
                             selectedDate = today
@@ -382,7 +382,7 @@ struct WeekCalendarView: View {
                         .fontWeight(.semibold)
                         .fontDesign(.rounded)
                         .foregroundStyle(.white)
-                        .offset(y: 12.5)
+                        .offset(x: -5, y: 12.5)
                     }
                 }
             }

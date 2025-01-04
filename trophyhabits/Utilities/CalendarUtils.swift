@@ -28,7 +28,6 @@ struct DayView: View {
                     RoundedRectangle(cornerRadius: 12)
                         .fill(
                             isFutureDay() ? Color(red: 0.1, green: 0.1, blue: 0.1) :
-                            (isPastDay() || isCurrentDay(date: date)) ? medalColor :
                             Color(red: 0.2, green: 0.2, blue: 0.2)
                         )
                 )
@@ -47,14 +46,15 @@ struct DayView: View {
                     }
                 }
                 
-                // Medal icon in the top-right corner
-                //            if isPastDay() {
-                //                Image(systemName: "medal.star.fill")
-                //                    .resizable()
-                //                    .aspectRatio(contentMode: .fit)
-                //                    .frame(width: 15)
-                //                    .foregroundStyle(medalColor)
-                //            }
+                 // Medal icon in the top-right corner
+                if !isFutureDay() {
+                    Image(systemName: "medal.star.fill")
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 17.5)
+                        .foregroundStyle(medalColor)
+                        .shadow(radius: 2.5)
+                }
             }
             
             Circle()
@@ -112,13 +112,13 @@ struct DayView: View {
         withAnimation {
             switch completionPercentage {
             case 1.0:
-                medalColor = .yellow.opacity(0.7)
+                medalColor = .yellow
             case 0.66...0.99:
-                medalColor = .gray.opacity(0.65)
+                medalColor = .gray
             case 0.33...0.65:
-                medalColor = .brown.opacity(0.6)
+                medalColor = .brown
             default:
-                medalColor = Color(red: 0.2, green: 0.2, blue: 0.2)
+                medalColor = .clear
             }
         }
     }
@@ -164,6 +164,13 @@ func randomDayColor() -> Color {
     let colors: [Color] = [.yellow.opacity(0.66), .brown.opacity(0.66), .gray.opacity(0.66), Color(red: 0.2, green: 0.2, blue: 0.2)]
     return colors.randomElement() ?? .yellow
 }
+
+extension Date {
+    var endOfDay: Date {
+        Calendar.current.date(bySettingHour: 23, minute: 59, second: 59, of: self)!
+    }
+}
+
 
 #Preview {
     @Previewable @State var selectedDate: Date = Date()
