@@ -31,10 +31,6 @@ struct DayView: View {
                             Color(red: 0.2, green: 0.2, blue: 0.2)
                         )
                 )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(isSelectedDay() ? Color.white : Color.clear, lineWidth: 2.5)
-                )
                 .onTapGesture {
                     withAnimation {
                         if !isFutureDay() {
@@ -51,11 +47,17 @@ struct DayView: View {
                     Image(systemName: "medal.star.fill")
                         .resizable()
                         .aspectRatio(contentMode: .fit)
-                        .frame(width: 17.5)
+                        .frame(width: 13)
                         .foregroundStyle(medalColor)
                         .shadow(radius: 2.5)
+                        .padding(.trailing, 2.5)
+                        .padding(.top, 1.5)
                 }
             }
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(isSelectedDay() ? Color.white : Color.clear, lineWidth: 2.5)
+            )
             
             Circle()
                 .foregroundStyle(isCurrentDay(date: date) ? .white : .clear)

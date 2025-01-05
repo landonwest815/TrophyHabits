@@ -334,7 +334,7 @@ struct HabitView: View {
         }
         .sheet(isPresented: $isDetailSheetPresented) {
             HabitDetailView(habit: habit)
-                .presentationDetents(.init([.fraction(0.6)]))
+                .presentationDetents(.init([.fraction(0.7)]))
                 .presentationCornerRadius(32)
         }
     }
