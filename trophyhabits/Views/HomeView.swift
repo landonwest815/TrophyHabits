@@ -240,6 +240,8 @@ struct HabitView: View {
     @State private var isDetailSheetPresented = false
     @State private var dragOffset: CGFloat = 0
     @State private var hasReachedMaxDistance: Bool = false
+    
+    @State private var shouldBounce: Bool = false
 
     private let maxDragDistance: CGFloat = -15 // Maximum drag distance (negative for upward drag)
 
@@ -250,7 +252,7 @@ struct HabitView: View {
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     .frame(width: 50, height: 50)
-                    .foregroundStyle(habit.dayCompletion[dataDateString(for: selectedDate)] ?? false ? .gray : .white)
+                    .foregroundStyle(habit.dayCompletion[dataDateString(for: selectedDate)] ?? false ? .gray.opacity(0.66) : .white)
 
                 Text(habit.habit)
                     .font(.headline)
@@ -311,26 +313,39 @@ struct HabitView: View {
             )
             .sensoryFeedback(.impact, trigger: hasReachedMaxDistance)
 
-            if habit.streak > 0 {
+            let currentStreak = habit.computeStreak(for: selectedDate)
+            let continuedStreak = habit.computeContinuedStreak(for: selectedDate)
+            let streak = max(currentStreak, continuedStreak)
+
+            if streak > 2 {
                 ZStack {
                     Image(systemName: "flame.fill")
                         .resizable()
                         .frame(width: 25, height: 27.5)
                         .foregroundStyle(.red.opacity(1))
+                        .symbolEffect(.bounce, value: shouldBounce)
+                        .transition(.symbolEffect(.appear))
 
                     Image(systemName: "flame")
                         .resizable()
                         .frame(width: 25, height: 27.5)
                         .foregroundStyle(.red.opacity(1))
+                        .symbolEffect(.bounce, value: shouldBounce)
+                        .transition(.symbolEffect(.appear))
 
-                    Text("\(habit.streak)")
+                    Text("\(streak)")
                         .font(.headline)
                         .fontWeight(.bold)
                         .foregroundStyle(.white)
                         .offset(x: 0, y: 1)
+                        .contentTransition(.numericText(value: Double(streak)))
                 }
                 .offset(x: 3, y: -3)
+                .onChange(of: habit.dayCompletion[dataDateString(for: selectedDate)] ?? false) { newValue in
+                    shouldBounce = newValue
+                }
             }
+            
         }
         .sheet(isPresented: $isDetailSheetPresented) {
             HabitDetailView(habit: habit)
@@ -338,6 +353,7 @@ struct HabitView: View {
                 .presentationCornerRadius(32)
         }
     }
+    
 }
 
 
@@ -433,6 +449,21 @@ func randomTrophyColor() -> Color {
 #Preview {
     let config = ModelConfiguration(isStoredInMemoryOnly: true)
     let container = try! ModelContainer(for: Habit.self, configurations: config)
+
+    // Pre-fill the container with six habits
+    let habits = [
+        Habit(icon: "figure.walk", habit: "Morning Walk", dayCompletion: ["2025-01-01": true, "2025-01-02": false]),
+        Habit(icon: "book.fill", habit: "Read a Book", dayCompletion: ["2025-01-01": true, "2025-01-02": true]),
+        Habit(icon: "fork.knife", habit: "Healthy Breakfast", dayCompletion: ["2025-01-01": false, "2025-01-02": true]),
+        Habit(icon: "sun.max.fill", habit: "Daily Gratitude", dayCompletion: ["2025-01-01": true]),
+        Habit(icon: "clock.fill", habit: "Sleep by 10 PM", dayCompletion: ["2025-01-01": true, "2025-01-02": false]),
+        Habit(icon: "drop.fill", habit: "Drink Water", dayCompletion: ["2025-01-01": true, "2025-01-02": true])  
+    ]
+
+    // Add the habits to the container
+    for habit in habits {
+        container.mainContext.insert(habit)
+    }
 
     return HomeView()
         .modelContainer(container)
