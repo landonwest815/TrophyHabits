@@ -54,22 +54,16 @@ struct HabitDetailView: View {
                                         tempHabitName = habit.habit // Pre-fill with the current name
                                     }
                                     .submitLabel(.done)
-                                    .onChange(of: tempHabitName) { newValue in
-                                        guard let newValueLastChar = newValue.last else { return }
-                                        if newValueLastChar == "\n" {
-                                            
-                                            tempHabitName.removeLast()
-                                            print("submission!")
-                                            habit.habit = tempHabitName
-                                            
-                                            do {
-                                                try modelContext.save()
-                                            } catch {
-                                                print("Error saving habit: \(error)")
-                                            }
-                                            
-                                            UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                                    .onSubmit {
+                                        habit.habit = tempHabitName
+                                        do {
+                                            try modelContext.save() // Save the changes to the model
+                                        } catch {
+                                            print("Error saving habit: \(error)")
                                         }
+                                        
+                                        // Optionally, dismiss the keyboard if needed.
+                                        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
                                     }
                                 
                             }
