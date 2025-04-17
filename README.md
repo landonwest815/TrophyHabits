@@ -2,7 +2,12 @@
 
 ## 📱 Overview
 
-TrophyHabit is an iOS application developed in Swift, designed to help users build and maintain positive habits through gamification. By earning trophies for completing habits, users stay motivated and engaged in their personal development journey.
+TrophyHabit is an iOS application developed in Swift, designed to help users build and maintain positive habits through gamification. By earning trophies for completing habits, users stay motivated and engaged in their personal development journey.  
+
+## 🖼️ Screenshot
+
+<img src="./assets/screenshots.png" height="400"/>
+
 
 ## 🎯 Project Objectives
 
