@@ -1,40 +1,46 @@
-# TrophyHabits
+# 🏆 TrophyHabit – Gamified Habit Tracker for iOS
 
-**TrophyHabits** is a sleek habit-tracking app designed to help you stay consistent while rewarding your progress with medals and trophies. Its clean, modern design ensures habit-building is engaging and visually appealing.
+## 📱 Overview
 
-## What Makes TrophyHabits Unique
+TrophyHabit is an iOS application developed in Swift, designed to help users build and maintain positive habits through gamification. By earning trophies for completing habits, users stay motivated and engaged in their personal development journey.
 
-- **Gamified Progress**: Earn **medals** daily and **trophies** weekly based on performance. Gold, silver, and bronze rewards keep you motivated.
-- **Clean Design**: Minimalist UI with intuitive card-based habit tracking, smooth animations, and dark mode-first styling.
-- **Focus on Engagement**: Long-press habits for detailed stats, view streaks, and stay on track with calendar views.
-- **Calendar Integration**: Weekly and monthly progress views with quick navigation and a "Go to Today" button.
+## 🎯 Project Objectives
 
-## Features
+- Develop a habit-tracking app that incorporates gamification elements.
+- Implement a user-friendly interface for creating and managing habits.
+- Utilize Swift and SwiftUI to build a responsive and interactive application.
 
-1. **Card-Based Habits**:
-   - Tap to complete.
-   - Long-press for detailed stats and streaks.
+## 🛠️ Technologies Used
 
-2. **Medals and Trophies**:
-   - Reward system for daily and weekly consistency.
-   - Gold, silver, and bronze levels.
+- **Programming Language:** Swift
+- **Framework:** SwiftUI
+- **Platform:** iOS
+- **Development Environment:** Xcode
 
-3. **Dynamic Calendar Views**:
-   - Navigate weekly and monthly with clarity.
-   - Highlight today and track progress seamlessly.
+## 🧠 Key Learnings
 
-4. **Simplicity at Its Core**:
-   - Clean typography, rounded corners, and subtle animations.
-   - Built for ease of use and focus.
+- **State Management:** Gained experience in managing state within SwiftUI applications.
+- **Data Persistence:** Implemented local data storage to save user habits and progress.
+- **User Interface Design:** Designed intuitive UI components that enhance user engagement.
+- **Gamification Techniques:** Learned how to apply game design elements to encourage habit formation.
 
-## Tech Stack
+## 🚀 Getting Started
 
-- will add these details
+1. **Clone the repository:**
 
-## Quick Start
+    ```bash
+    git clone https://github.com/landonwest815/TrophyHabit.git
+    ```
 
-1. **Clone the Repo**:
-   ```bash
-   git clone https://github.com/landonwest815/TrophyHabit
-   cd TrophyHabits
-   open TrophyHabits.xcodeproj
+2. **Open in Xcode:**
+    - Navigate to `File` > `Open` and select the cloned repository folder.
+
+3. **Build and Run:**
+    - Select your target device or simulator.
+    - Click the `Run` button to build and launch the application.
+
+## 📌 Future Enhancements
+
+- Integrate cloud synchronization to back up user data.
+- Add customizable habit categories and reminders.
+- Implement analytics to provide users with insights into their habit-building progress.
